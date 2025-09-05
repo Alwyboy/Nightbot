@@ -4,9 +4,9 @@ import fetch from "node-fetch";
 const app = express();
 
 /**
- * Fungsi untuk meminta jawaban dari Gemini
+ * Panggil Gemini API dengan gaya "teman curhat"
  */
-async function askGemini(prompt) {
+async function askGemini(userInput) {
   const response = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
       process.env.GEMINI_API_KEY,
@@ -19,9 +19,10 @@ async function askGemini(prompt) {
             role: "user",
             parts: [
               {
-                text: `Kamu adalah asisten ramah yang berbicara dengan hangat, manusiawi, dan bisa diajak curhat. 
-Gunakan nada seperti teman dekat yang peduli. Jawablah singkat tapi empatik. 
-Pertanyaan atau curhatan user: ${prompt}`
+                text: `Kamu adalah teman yang ramah, hangat, dan empatik. 
+Jawablah seolah sedang mendengarkan curhatan teman dekat. 
+Gunakan bahasa singkat, manusiawi, penuh pengertian. 
+Input user: ${userInput}`
               }
             ]
           }
@@ -35,35 +36,33 @@ Pertanyaan atau curhatan user: ${prompt}`
 }
 
 /**
- * Endpoint utama untuk Nightbot
+ * Endpoint tunggal untuk Nightbot
  */
 app.get("/", async (req, res) => {
   const userInput = req.query.q;
-  if (!userInput) return res.send("❌ Masukkan pertanyaan setelah !ai");
+  if (!userInput) return res.send("❌ Ketik sesuatu setelah 'Nightbot'");
 
   try {
-    // Jawaban awal dari Gemini
     let reply = await askGemini(userInput);
 
-    // Kalau terlalu panjang, ringkas jadi 1-2 kalimat
+    // Kalau terlalu panjang → ringkas
     if (reply.length > 400) {
       reply = await askGemini(
-        `Ringkas jawaban berikut jadi 1-2 kalimat singkat, tetap dengan nada ramah dan manusiawi:\n\n${reply}`
+        `Ringkas jawaban berikut jadi 1-2 kalimat, tetap dengan nada ramah dan manusiawi:\n\n${reply}`
       );
     }
 
-    // Bersihkan Markdown/format aneh
+    // Bersihkan format aneh (markdown, newline)
     reply = reply
-      .replace(/\*\*/g, "")  // hapus bold
-      .replace(/`/g, "")     // hapus backtick
-      .replace(/#+/g, "")    // hapus heading
-      .replace(/\n+/g, " ")  // ganti newline jadi spasi
+      .replace(/\*\*/g, "")
+      .replace(/`/g, "")
+      .replace(/#+/g, "")
+      .replace(/\n+/g, " ")
       .trim();
 
     // Tambahkan sentuhan ramah
     reply = reply + " 🙂";
 
-    // Potong max 400 karakter agar aman untuk Nightbot
     res.send(reply.substring(0, 400));
   } catch (err) {
     res.send("⚠️ Error: " + err.message);
