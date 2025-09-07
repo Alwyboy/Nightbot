@@ -40,7 +40,7 @@ Input user: ${userInput}`
  */
 app.get("/", async (req, res) => {
   const userInput = req.query.q;
-  if (!userInput) return res.send("❌ Ketik sesuatu setelah 'Nightbot'");
+  if (!userInput) return res.send("❌ Ketik sesuatu setelah 'curhat'");
 
   try {
     let reply = await askGemini(userInput);
